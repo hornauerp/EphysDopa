@@ -28,9 +28,9 @@ Code requires spikesorted data in the [phy format](https://github.com/cortex-lab
 
 Different parts of the analysis are subdevided into different analysis scripts:
 - [Feature extraction](/Notebooks/) (to be added)
-- 
 - [Data exploration](/Notebooks/data_exploration.ipynb)
-- [Classification analysis](/Notebooks/data_exploration.ipynb) and [Treatment evaluation](/Notebooks/treatment_evaluation.ipynb)
+- [Classification analysis](/Notebooks/data_exploration.ipynb)
+- [Treatment evaluation](/Notebooks/treatment_evaluation.ipynb)
 
 
 ## Citation
