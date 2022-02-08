@@ -7,7 +7,10 @@ Created with [BioRender](BioRender.com)
 ## Overview
 MADEB was created to facilitate the analysis of extracellular recordings of neuronal cultures using high-density microelectrode arrays (HD-MEAs). MADEB allows users to easily:
 - Extract electrophysiological features from spikesorted HD-MEA recordings
-- 
+- Visualize differential developmental trajectories 
+- Apply machine learning algorithms to classify different conditions
+- Obtain biomarkers predictive of the respective condition
+- Evaluate the effect of treatments
 
 ## Requirements
 Currently MADEB is only available on MATLAB, so a recent MATLAB installation (>2019b) is required. We plan on expanding MADEB to Python in the near future.
@@ -21,7 +24,14 @@ However, all analysis scripts are also available as MATLAB live scripts, which d
 The package is ready-to-use right after cloning. 
 
 ## Usage
-Code requires spike-sorted data in the [phy format](https://github.com/cortex-lab/phy). For help with spikesorting check out the [Spikeinterface package](https://spikeinterface.readthedocs.io/en/latest/). 
+Code requires spikesorted data in the [phy format](https://github.com/cortex-lab/phy). For help with spikesorting check out the [Spikeinterface package](https://spikeinterface.readthedocs.io/en/latest/). 
+
+Different parts of the analysis are subdevided into different analysis scripts:
+- [Feature extraction](/Notebooks/) (to be added)
+- 
+- [Data exploration](/Notebooks/data_exploration.ipynb)
+- [Classification analysis](/Notebooks/data_exploration.ipynb) and [Treatment evaluation](/Notebooks/treatment_evaluation.ipynb)
 
 
-This package was first published in "Electrophysiological classification of iPSC-derived dopaminergic neurons harbouring the SNCA-A53T mutation" and additionally contains code to replicate the figures used in the publication.  
+## Citation
+This package was published in "Electrophysiological classification of iPSC-derived dopaminergic neurons harbouring the SNCA-A53T mutation" and additionally contains code to replicate the figures used in the publication.
