@@ -6,18 +6,17 @@ classdef WholeNetwork < handle
     
     properties (SetObservable)
         InputPath
+        Params
         Duration
         Templates
         XYElectrodes
-        PrefElectrodes
         ActiveChannels
         Active  %(1,:) = spike times (2,:) channels of Active templates (3,:) within burst (1)
         SpikeTimes
+        SamplingRate
         TemplateMatrix
         BaselineFrequency
         BaselineDistribution
-        temp_x
-        temp_y
         
         %Burstdata
         Bursts
@@ -53,8 +52,6 @@ classdef WholeNetwork < handle
         CellLine
         Treatment
         TPT %Time past treatment
-        HPF
-         
     end
     
     properties (Dependent)
@@ -63,26 +60,21 @@ classdef WholeNetwork < handle
     
     %% Methods to initialize
     methods (Hidden)
-        function nw = WholeNetwork(input_path,subsampling,method)
+        function nw = WholeNetwork(input_path,params,subsampling,method)
             if nargin > 0
                 nw.InputPath = input_path;
-                [nw.XYElectrodes,nw.PrefElectrodes] = nw.getCoordinates();
-                nw.SpikeTimes = nw.getSpikeTimes();
+                nw.Params = params;
+                nw.getMetaData();
+                nw.XYElectrodes = nw.getCoordinates();
+                [nw.SpikeTimes, nw.SamplingRate] = nw.getSpikeTimes();
                 nw.TemplateMatrix = nw.getTemplateMatrix();
                 nw.Duration = double(max(nw.SpikeTimes(1,:))); %seconds
                 nw.Templates = nw.generateTemplates();
                 if isempty([nw.ActiveChannels])
                     return
                 end
-                nw.getMetaData();
-                merged_templates = [input_path '/traces.templates-merged.hdf5'];
-                if ~exist(merged_templates,'file')
-                    merged_templates = [input_path '/traces.templates.hdf5'];
-                end
-                nw.temp_x = double(h5read(merged_templates, '/temp_x') + 1);
-                nw.temp_y = double(h5read(merged_templates, '/temp_y') + 1);
-                if nargin > 1
-                    nw.subsampleNW(subsampling,method)
+                if nargin > 2
+                    nw.subsampleNW(subsampling,method);
                 end
                 if ~isempty([nw.ActiveChannels])
                     nw.getActive;
@@ -159,47 +151,24 @@ classdef WholeNetwork < handle
             check = numel(spk)> 2 && rv < 0.02 &&  rate > 0.1 && rate < 10 && length(active)>1; %amp > -15 && amp < -5 && 
         end
         
-        function [xy,xy_pref] = getCoordinates(obj)
-            path = [obj.InputPath '/traces-merged.GUI/'];
-            if ~exist(path,'dir')
-                path = [obj.InputPath '/traces.GUI/'];
-            end
-            if ~exist(path,'dir')
-               path = obj.InputPath; 
-            end
-            xy = readNPY(fullfile(path, 'channel_positions.npy'));
-            if exist([obj.InputPath '/traces.clusters-merged.hdf5'],'file')
-                h = h5read([obj.InputPath '/traces.clusters-merged.hdf5'],'/electrodes');
-            else
-                h = h5read([obj.InputPath '/traces.clusters.hdf5'],'/electrodes');
-            end
-            
-            h_adj = h+1;
-            xy_pref = uint16(h_adj);
-% xy_pref = [];
+        function xy = getCoordinates(obj)
+            xy = readNPY(fullfile(obj.InputPath, 'channel_positions.npy'));
         end
         
-        function spk = getSpikeTimes(obj)
-            path = fullfile(obj.InputPath, '/traces-merged.GUI/');
-            if ~exist(path,'dir')
-                path = [obj.InputPath '/traces.GUI/'];
-            end
-            if ~exist(path,'dir')
-                path = obj.InputPath;
-            end
-            spk(1,:) = double(readNPY(fullfile(path, 'spike_times.npy')))/20000;
-            spk(2,:) = uint16(readNPY(fullfile(path, 'spike_templates.npy')));
+        function [spk,sr] = getSpikeTimes(obj)
+            params_path = fullfile(obj.InputPath, 'params.py');
+            fileID = fopen(params_path,'r');
+            params_txt = fscanf(fileID,'%c');
+            params_parts = strsplit(params_txt,'\n');
+            sr_idx = startsWith(params_parts,'sample');
+            sr = strsplit(params_parts{sr_idx},' = ');
+            sr = str2double(sr{2});
+            spk(1,:) = double(readNPY(fullfile(obj.InputPath, 'spike_times.npy')))/sr;
+            spk(2,:) = uint16(readNPY(fullfile(obj.InputPath, 'spike_templates.npy')));
         end
         
         function tm = getTemplateMatrix(obj)
-            path = [obj.InputPath '/traces-merged.GUI/'];
-            if ~exist(path,'dir')
-                path = [obj.InputPath '/traces.GUI/'];
-            end
-            if ~exist(path,'dir')
-                path = obj.InputPath;
-            end
-            tmpfile = [path '/templates.npy'];
+            tmpfile = fullfile(obj.InputPath, 'templates.npy');
             tm = readNPY(tmpfile);
         end
         
@@ -222,12 +191,6 @@ classdef WholeNetwork < handle
                 rd = datetime(obj.RecordingDate,'InputFormat','yyMMdd');
                 obj.DIV = days(rd-pd);
                 obj.CellLine = cell_line;
-                path = fileparts(obj.InputPath);
-                if exist([fileparts(obj.InputPath) '/recording.raw.h5'],'file')
-                    obj.HPF = h5read([fileparts(obj.InputPath) '/recording.raw.h5'],'/settings/hpf');
-                elseif exist(sprintf('%s/network%s.raw.h5',path,obj.ChipID),'file')
-                    obj.HPF = h5read(sprintf('%s/network%s.raw.h5',path,obj.ChipID),'/settings/hpf');
-                end
             catch
                 warning('No metadata reference file found')
             end
@@ -293,19 +256,15 @@ classdef WholeNetwork < handle
 
         
         %% Actively callable methods
-        function Burst_merged = getBurstTimes(obj,N,ISI_N,t)
-            if nargin ~= 4
-                rel_th = 0.0015; %0.00035
-                N = ceil(length([obj.Active])*rel_th);
-                if N < 100
-                    N = 65;
-                    ISI_N = 1;
-                else
-                    ISI_N = 1.5; %0.3
-                end
-           
-            t = 2*ISI_N;
+        function Burst_merged = getBurstTimes(obj)
+            params = obj.Params;
+            if params.Bursts.N < 1 %Absolute value if N>1, otherwise relative to number of units
+                N = ceil(length([obj.Active])*params.Bursts.N);
+            else
+                N = params.Bursts.N;
             end
+            ISI_N = params.Bursts.ISI_N;
+                        t = params.Bursts.merge_t*ISI_N;
             Spike.T = obj.Active(1,:);
             Spike.C = obj.Active(2,:);
             [Burst, ~] = burst_detect_isin(Spike,N,ISI_N);
@@ -381,7 +340,7 @@ classdef WholeNetwork < handle
                 
                 obj.IntraBF = sum(BurstInd)/(sum(obj.BD)*length([obj.ActiveChannels]));
                 obj.InterBF = (numel(BurstInd)-sum(BurstInd))/((obj.Duration-sum(obj.BD))*length([obj.ActiveChannels]));
-                binning = 0.1;
+                binning = obj.Params.Bursts.binning;
                 Fs = 1/binning;
                 for i = 1:length(obj.Bursts.T_end)
                     t = obj.Active(1,:);
@@ -410,10 +369,6 @@ classdef WholeNetwork < handle
                     catch
                         dv(i) = NaN;
                     end
-%                     [~,ind] = max(counts_s);
-%                     peak = ind*binning+t_start;
-%                     rt(i) = peak - t_start;
-%                     dt(i) = t_end - peak;
                 end
                 obj.RiseTime = mean(rt,'omitnan');
                 obj.DecayTime = mean(dt,'omitnan');
@@ -429,7 +384,7 @@ classdef WholeNetwork < handle
         
         function obj = getRegularity(obj)
             % Calculate Regularity
-            binning = 0.1;
+            binning = obj.Params.Regularity.binning;
             Fs = 1/binning;
             spk_nw = histc(obj.Active(1,:),0:binning:obj.Duration);
             spk_nw = spk_nw./max(spk_nw);
@@ -476,7 +431,11 @@ classdef WholeNetwork < handle
 
         
         function nc = getSynchronicity(obj)
-            %mex('/cluster/project/bsse_sdsc/BELUB/Scripts/Functions/CCGHeart.c');
+            if isempty(which('CCGHeart'))
+                cd('Functions')
+                mex('CCGHeart.c');%Might need to specify the correct path here
+                cd ..
+            end
             if length(obj.ActiveChannels)>1
                 spk = obj.Active(1,:);
                 ch = obj.Active(2,:);
@@ -541,7 +500,6 @@ classdef WholeNetwork < handle
                Y = obj.XYElectrodes(el_id,2);
                X = mean(X);
                Y = mean(Y);
-               [X,Y] = pos2cor(X,Y);
                x(i) = X;
                y(i) = Y;
             end
@@ -550,7 +508,6 @@ classdef WholeNetwork < handle
                 ref_el = obj.Templates(tmp_ID(i)).RefElectrode;
                 X_tmp = obj.XYElectrodes(ref_el,1);
                 Y_tmp = obj.XYElectrodes(ref_el,2);
-                [X_tmp,Y_tmp] = pos2cor(X_tmp,Y_tmp);
                 x_tmp(i) = X_tmp;
                 y_tmp(i) = Y_tmp;
             end
@@ -565,18 +522,10 @@ classdef WholeNetwork < handle
             f = scatter(x,y,sz,Z,'filled');
             hold on
             scatter(x_tmp,y_tmp,100,'k*')
-%             xlim([0 220]);
-%             ylim([0 120]);
-%             xticks(0:20:220)
-%             yticks(0:20:120)
-%             set(gca,'xtick',[])
-%             set(gca,'xticklabel',[])
-%             set(gca,'ytick',[])
-%             set(gca,'yticklabel',[])
             f.MarkerEdgeAlpha = 0.8;
             f.MarkerFaceAlpha = 0.5;
 
-            colormap(jet);c = colorbar;
+            c = colorbar;
             ll = ceil(abs(log10(min(Z))));
             c.Ticks = [10.^(-ll:0) ceil(max(Z))];
             c.Label.String = 'Frequency per Unit [Hz]';
@@ -586,40 +535,34 @@ classdef WholeNetwork < handle
 
         
         function p = plotCoactivity(obj,binning,bursts)
+            
             if nargin == 3
                 t_start = obj.Bursts.T_start(bursts(1))-1;
                 t_end = obj.Bursts.T_end(bursts(end))+1;
                 for i = bursts(1):bursts(end)
-                xline(obj.Bursts.T_start(i),'--g',{string(round(obj.Bursts.T_start(i)))},'LabelHorizontalAlignment','center');
-                hold on
-                xline(obj.Bursts.T_end(i),'--r',{string(round(obj.Bursts.T_end(i)))},'LabelHorizontalAlignment','center');
+                    xline(obj.Bursts.T_start(i),'--g',{string(round(obj.Bursts.T_start(i)))},'LabelHorizontalAlignment','center');
+                    hold on
+                    xline(obj.Bursts.T_end(i),'--r',{string(round(obj.Bursts.T_end(i)))},'LabelHorizontalAlignment','center');
                 end
             else
-                t_start = 10;
-                t_end = 180;40;%obj.Duration;
+                t_start = 0;
+                t_end = 180;
             end
-%             histogram(obj.Active(1,:),t_start:binning:t_end) 
             y = histc(obj.Active(1,:),t_start:binning:t_end);
             y_smooth = y;smoothdata(y);
             x = t_start:binning:t_end;
             G = zeros(1,length(x));
             colormap('gray')
             p = patch([fliplr(x) x],[G y_smooth],[max(y_smooth)-y_smooth max(y_smooth)-y_smooth]);
-            clim([1000 max(y_smooth)])
+            
+            h=gca;
+            h.CLim = [max(y_smooth)/2 max(y_smooth)];
             ylabel('Coactivity');
             xlabel('Time');
             axis tight
-            yticklabels ''
-            xticks([])
-            h=gca;
-set(h,'ycolor','none')
-h.YAxis.Label.Color=[0 0 0];
-h.YAxis.Label.Visible='on';
         end
         
         function plotSpikePerUnit(obj)
-            
-%             figure('Name','Spikes per Unit','Position', [200 200 1200 600]);
             ch = obj.Active(2,:);
             [C,~,ic] = unique(ch);
             a_counts = accumarray(ic,1);
@@ -628,19 +571,12 @@ h.YAxis.Label.Visible='on';
             axis tight
             xlabel('Units');
             ylabel('# Spikes')
-            %             pref = [obj.Templates(C).RefElectrode];
-            %             X = obj.XYElectrodes(pref,1);
-%                         Y = obj.XYElectrodes(pref,2);
-            %             [X,Y] = pos2cor(X,Y);
-%             matrix=accumarray([Y(:),X(:)],a_counts(:));
-% %             subplot(1,2,2)
-%             pcolor(matrix); colorbar
         end
         
         function plotWaveforms(obj)
-            wfs = vertcat(obj.Templates([obj.ActiveChannels]).MaxWf);
+            wfs = vertcat(obj.Templates([obj.ActiveChannels]).MaxWf)*6.2;
             plot(wfs')
-            set(gca, 'Box', 'off','TickDir', 'out','TickLength', [.02 .02] ,'XMinorTick','off','YMinorTick', 'off','LineWidth', 1);
+            set(gca, 'Box', 'off','TickDir', 'out','TickLength', [.01 .01] ,'XMinorTick','off','YMinorTick', 'off','LineWidth', 1);
             axis tight
             ylabel('Amplitude (\muV)');
             xlabel('Time (samples)')
@@ -662,12 +598,11 @@ h.YAxis.Label.Visible='on';
         end
 
         function plotOverview(obj)
-            n = strsplit(obj.InputPath,filesep);
-            name = sprintf('Chip: %s Date: %s',n{end-2}, n{end-3});
+            name = sprintf('Chip: %s Date: %s',obj.ChipID, obj.RecordingDate);
             figure('Name',name,'Units','pixels','Position',[0 0 1900 1080]);
             subplot(3,2,1); obj.plotWaveforms; title('Average Waveforms')
-            subplot(3,2,2); obj.plotCoactivity(0.1); title('Coactivity')
-            subplot(3,2,3); obj.plotNetworkActivity; title('Unit activity')
+            ax = subplot(3,2,2); colormap(ax,'gray'); obj.plotCoactivity(0.1);  title('Coactivity')
+            ax = subplot(3,2,3); obj.plotNetworkActivity; colormap(ax,'parula'); title('Unit activity')
             subplot(3,2,4); obj.plotSpikePerUnit; title('Spikes per Unit')
             subplot(3,2,[5,6]); obj.plotActivityRaster; title('Activity Raster')
         end

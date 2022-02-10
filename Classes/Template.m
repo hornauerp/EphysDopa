@@ -30,7 +30,6 @@ classdef Template < handle
         WidthPeak2
         AUCtrough
         WidthTrough
-        Velocity
         Rise
         Decay
         
@@ -71,11 +70,6 @@ classdef Template < handle
             if nargin > 0
                 tmp.Network = network;
                 tmp.ID = id;
-                if ~isempty(network.PrefElectrodes)
-                tmp.RefElectrode = network.PrefElectrodes(id);
-                else
-                    tmp.RefElectrode = [];
-                end
                 tmp.SpikeFrames= tmp.getSpikes(st);
                 tmp.Frequency = tmp.calcFrequency(network);
                 tmp.SparseMatrix = w;
@@ -126,7 +120,9 @@ classdef Template < handle
         function plotActiveElectrodes(obj)
             nw = obj.Network;
             pos = nw.XYElectrodes;
-            [X_all,Y_all] = pos2cor(pos(:,1),pos(:,2));
+%             [X_all,Y_all] = pos2cor(pos(:,1),pos(:,2));
+            X_all = pos(:,1);
+            Y_all = pos(:,2);
             X_active = X_all(obj.Electrodes);
             Y_active = Y_all(obj.Electrodes);
             X_ref = X_all(obj.RefElectrode);
@@ -145,34 +141,30 @@ classdef Template < handle
                 'MarkerSize',4,...
                 'MarkerEdgeColor','k',...
                 'MarkerFaceColor','r')
-            rectangle('Position',[0 0 220 120]);
-            ax = gca;
-            ax.XLim = [-10 230];
-            ax.XTick = 0:20:220;
-            ax.YLim = [-10 130];
-            ax.YTick = 0:20:120;
-            grid minor
+%             rectangle('Position',[0 0 220 120]);
+%             ax = gca;
+%             ax.XLim = [-10 230];
+%             ax.XTick = 0:20:220;
+%             ax.YLim = [-10 130];
+%             ax.YTick = 0:20:120;
+%             grid minor
+            axis tight
         end
         
-        function h = plotConnectivity(obj,nw,threshold)
-            if nargin ==1
-                threshold = 0.1;
-            end
+        function h = plotConnectivity(obj)
             h = figure;
-            sd = std([nw.Templates.NormCon]);
-            %nw.Synchronicity+20*sd;
-            con = obj.NormCon>threshold;
-            con_v = [1 obj.NormCon(con)];
+            nw = obj.Network;
+            con = isoutlier(obj.ConVector);
+            con_v = [1 obj.ConVector(con)];
             ids = nw.ActiveChannels(con);
-            ids = [obj.ID; ids];
+            ids = [obj.ID ids];
             for i = 1:numel(ids)
-               Z(i) = length(nw.Templates(ids(i)).Spikes(1,:));
+               Z(i) = length(nw.Templates(ids(i)).SpikeTimes(1,:));
                el_id = nw.Templates(ids(i)).Electrodes;
                X = nw.XYElectrodes(el_id,1);
                Y = nw.XYElectrodes(el_id,2);
                X = mean(X);
                Y = mean(Y);
-               [X,Y] = pos2cor(X,Y);
                x(i) = X;
                y(i) = Y;
                
@@ -191,9 +183,6 @@ classdef Template < handle
             c.Ticks = [10.^(-ll:0) ceil(max(Z))];
             c.Label.String = 'Frequency per Unit [Hz]';
             set(gca,'ColorScale','log','CLim',[10^-ll ceil(max(Z))])
-%             plot([repmat(cpx,length(x),1) x']', [repmat(cpy,length(y),1) y']')
-            xlim([0 220])
-            ylim([0 120])
         end
         
         function spt = getSpikes(obj,st)
@@ -223,7 +212,6 @@ classdef Template < handle
         end
         
         function inferFeatures(obj)
-
             [m,~] = min(obj.Waveform');
             [~,n] = min(m);
             thiswave = obj.Waveform(n,:)';
@@ -233,14 +221,7 @@ classdef Template < handle
             idx = find(sum(obj.Waveform'));
             wfs_table.single_template_spatial = obj.Waveform(idx,:)';
             wfs_table.noise_thresh = 0.5;
-%             wfs_table.x_inc_adj = temp_x(idx);
-%             wfs_table.y_inc_adj = temp_y(idx);
             table_risefall = fit_risefall(wfs_table,table_wfs_features);
-%             try
-%             [lm,~,~] = fit_speed_3_circus_template(wfs_table);
-%             catch
-                lm = NaN;
-%             end
             obj.Halfwidth = table_wfs_features.HalfWidth;
             obj.Asymmetry = table_wfs_features.assy;
             obj.T2Pratio = table_wfs_features.t2pratio;
@@ -251,7 +232,6 @@ classdef Template < handle
             obj.WidthPeak2 = length(table_wfs_features.WidthPeak2);
             obj.AUCtrough = table_wfs_features.AUCtrough;
             obj.WidthTrough = length(table_wfs_features.WidthTrough);
-            obj.Velocity = lm;
             obj.Rise = table_risefall.lm_rising;
             obj.Decay = table_risefall.lm_decay;
                         
@@ -304,9 +284,6 @@ classdef Template < handle
             % Multichannel features
             [obj.Sholl,obj.Spread,obj.CritV,obj.DendMax] = obj.ShollAnalysis;
             [obj.ResonanceMagnitude,obj.ResonanceFrequency,obj.ResonanceFit] = obj.calcRegularity;
-%             [~, rate, regularity] = BayesRR(double(obj.SpikeFrames(1,:)));
-%             obj.Rate = mean(log(accumarray(ceil((1:numel(rate))/20)',rate(:),[],@mean)));
-%             obj.Regularity = mean(log(accumarray(ceil((1:numel(regularity))/20)',regularity(:),[],@mean)));
         end
                 
         
@@ -315,7 +292,7 @@ classdef Template < handle
         
         
         function [mag,freq,exp_fit] = calcRegularity(obj)
-           binning = 0.1;
+           binning = obj.Network.Params.Regularity.binning;
            Fs = 1/binning;
            spk = histc(obj.SpikeTimes,0:binning:obj.SpikeTimes(end));
            NFFT = length(spk);
@@ -421,18 +398,16 @@ classdef Template < handle
                 min_y = min(abs(diff(unique(xy(:,2)))));
                 x_offset = (min_x*0.9)/2;
                 y_scale = 0.9*(min_y/abs(min(min(wf))))/2;
-                
-                colorshift = 10;
-                c = othercolor('YlGnBu3',ceil(abs(min(vmin))*y_scale)+colorshift);
+                c = colormap('hot'); c = c(1:200,:);
+                c = flipud(c(round(linspace(1,length(c),ceil(abs(min(vmin))*y_scale))),:));
                 x_l = xy(:,1)-min_x/2;
                 x_r = xy(:,1)+min_x/2;
                 y_l = xy(:,2)-min_y/2;
                 y_r = xy(:,2)+min_y/2;
                 x = [x_l' x_r' x_l' x_r'];
                 y = [y_l' y_l' y_r' y_r'];
-%                 subplot(1,2,2)
                 for e = 1:size(xy,1)
-                    plot(linspace(xy(e,1)-x_offset,xy(e,1)+x_offset,size(wf,2)),y_scale*wf(e,:)+xy(e,2),'Color',c(ceil(abs(vmin(e))*y_scale)+colorshift,:),'LineWidth',1)
+                    plot(linspace(xy(e,1)-x_offset,xy(e,1)+x_offset,size(wf,2)),y_scale*wf(e,:)+xy(e,2),'Color',c(ceil(abs(vmin(e))*y_scale),:),'LineWidth',1)
                     
                     hold on
                 end
@@ -446,14 +421,18 @@ classdef Template < handle
                 smooth_x = sgolayfilt(interp_x,smooth_order,smooth_window);
                 smooth_y = sgolayfilt(interp_y,smooth_order,smooth_window);
                 b = boundary(smooth_x',smooth_y',0.5);
-                patch(smooth_x(b),smooth_y(b),'b','FaceColor',c(end,:),'FaceAlpha',0.1,'EdgeAlpha',0.1,'EdgeColor',c(end,:))
+%                 patch(smooth_x(b),smooth_y(b),'b','FaceColor',c(end,:),'FaceAlpha',0.1,'EdgeAlpha',0.1,'EdgeColor',c(end,:))
                 colormap(c)
                 cb = colorbar;
-                cb.TickLabels = {};
+                cb.Ticks = [0 1];
+                cb.TickLabels = [0,round(min(min(wf))*6.2)];
                 cb.Label.String = 'Amplitude';
                 cb.Location = 'southoutside';
-                cb.Position = [0.33 0.1 0.33 0.05];
+                cb.Position = [0.33 0.1 0.33 0.02];
                 set(gca,'visible','off')
+                ref = obj.Network.XYElectrodes(obj.RefElectrode,:);
+                xlim([ref(1)-100 ref(1)+100])
+                ylim([ref(2)-100 ref(2)+100])
             end
         end
             
@@ -509,84 +488,6 @@ classdef Template < handle
             end
         end
         
-        function plotTemplateSpread(obj,rawFile,n_spk,window)
-            arguments
-                obj (1,1) Template
-                rawFile (1,1) = []
-                n_spk (1,1) {isnumeric} = 1000
-                window (1,1) {isnumeric} = 30
-            end
-            xy = obj.Network.XYElectrodes(obj.Electrodes,:);
-            if isempty(rawFile) 
-                wf = obj.Waveform(obj.Electrodes,:);
-            else
-                %                 spkt = rawFile.getSpikeTimes;
-                %                 spk_t = spk_t(spkt.channel==obj.RefElectrode)-min(spkt.frameno);
-                %                 wf = arrayfun(@(x) rawFile.getCutoutsOneChannel(x,double(spk_t(n_spk))+5,window,window),...
-                %                     obj.RefElectrode,'UniformOutput',0);%
-                spk_t = double(obj.SpikeFrames);
-                wf = arrayfun(@(x) rawFile.getCutoutsOneChannel(x,40001,window,window),...
-                    obj.RefElectrode,'UniformOutput',0);
-                wf = [wf{:}];
-                %
-                %                 spk_t = spkt.frameno-rawFile.getFrameNoAt(1);
-                %                 wf = rawFile.getData(double(spk_t(n_spk))-window+1720,2*window);
-                wf = wf-mean(wf,1);
-                [b1, a1] = butter(3,[300/20000,6000/20000]*2,'bandpass');
-% [b1, a1] = butter(3,300/20000*2,'high');
-                wf_filt = filtfilt(b1,a1,wf);
-                
-                figure;plot(wf_filt,'LineWidth',0.5)%linspace(0,2*window,size(wf_filt,1)),
-                xlabel('Time [ms]')
-                hold on
-                yline(-7*mad(wf_filt,0),'r--')
-                xline(window)
-%                 ylim([-20 10])
-                wf = wf_filt';
-            end
-            [vmin,~] = min(wf,[],2);
-            v_idx = vmin~=0;
-            vmin = vmin(v_idx);
-            xy = xy(v_idx,:);
-            wf = wf(v_idx,:);
-            min_x = min(abs(diff(unique(xy(:,1)))));
-            min_y = min(abs(diff(unique(xy(:,2)))));
-            x_offset = (min_x*0.9)/2;
-            y_scale = 0.9*(min_y/abs(min(min(wf))))/2;
-            
-            colorshift = 10;
-            c = othercolor('YlGnBu3',ceil(abs(min(vmin))*y_scale)+colorshift);
-            x_l = xy(:,1)-min_x/2;
-            x_r = xy(:,1)+min_x/2;
-            y_l = xy(:,2)-min_y/2;
-            y_r = xy(:,2)+min_y/2;
-            x = [x_l' x_r' x_l' x_r'];
-            y = [y_l' y_l' y_r' y_r'];
-            %                 subplot(1,2,2)
-            for e = 1:size(xy,1)
-                plot(linspace(xy(e,1)-x_offset,xy(e,1)+x_offset,size(wf,2)),y_scale*wf(e,:)+xy(e,2),'Color',c(ceil(abs(vmin(e))*y_scale)+colorshift,:),'LineWidth',1)
-                
-                hold on
-            end
-            
-            b = boundary(x',y',0.8);
-            smooth_window = 9;
-            smooth_order = 2;
-            interp_factor = 2;
-            interp_x = interp(x(b),interp_factor);
-            interp_y = interp(y(b),interp_factor);
-            smooth_x = sgolayfilt(interp_x,smooth_order,smooth_window);
-            smooth_y = sgolayfilt(interp_y,smooth_order,smooth_window);
-            b = boundary(smooth_x',smooth_y',0.5);
-            patch(smooth_x(b),smooth_y(b),'b','FaceColor',c(end,:),'FaceAlpha',0.1,'EdgeAlpha',0.1,'EdgeColor',c(end,:))
-            colormap(c)
-            cb = colorbar;
-            cb.TickLabels = {};
-            cb.Label.String = 'Amplitude';
-            cb.Location = 'southoutside';
-            cb.Position = [0.33 0.1 0.33 0.05];
-            set(gca,'visible','off')
-        end
         function prepareSave(obj)
            obj.SparseMatrix = [];
            obj.SpikeFrames = [];
