@@ -27,7 +27,7 @@ The package is ready-to-use right after cloning.
 Code requires spikesorted data in the [phy format](https://github.com/cortex-lab/phy). For help with spikesorting check out the [Spikeinterface package](https://spikeinterface.readthedocs.io/en/latest/). 
 
 Different parts of the analysis are subdevided into different analysis scripts:
-- [Feature extraction](/Notebooks/) (to be added)
+- **Feature extraction** ([Jupyter notebook](/Notebooks/feature_extraction.ipynb), [MATLAB live script](/Notebooks/feature_extraction_single_recording.mlx))
 - [Data exploration](/Notebooks/data_exploration.ipynb)
 - [Classification analysis](/Notebooks/data_exploration.ipynb)
 - [Treatment evaluation](/Notebooks/treatment_evaluation.ipynb)
