@@ -258,13 +258,20 @@ classdef WholeNetwork < handle
         %% Actively callable methods
         function Burst_merged = getBurstTimes(obj)
             params = obj.Params;
-            if params.Bursts.N < 1 %Absolute value if N>1, otherwise relative to number of units
+            if params.Bursts.N < 1 %Absolute value if N>1, otherwise relative to total activity
                 N = ceil(length([obj.Active])*params.Bursts.N);
             else
                 N = params.Bursts.N;
             end
+            
             ISI_N = params.Bursts.ISI_N;
-                        t = params.Bursts.merge_t*ISI_N;
+            
+            if N<100
+                N = 65;
+                ISI_N = 1;
+            end
+            
+            t = params.Bursts.merge_t*ISI_N;
             Spike.T = obj.Active(1,:);
             Spike.C = obj.Active(2,:);
             [Burst, ~] = burst_detect_isin(Spike,N,ISI_N);
@@ -537,10 +544,15 @@ classdef WholeNetwork < handle
         function p = plotCoactivity(obj,binning,bursts)
             
             if nargin == 3
+                N_bursts = length(obj.Bursts.T_start);
+                if max(bursts)>N_bursts
+                    warning('Your specified number of bursts is larger than the actual burst count. Using all available bursts instead.')
+                    bursts = 1:N_bursts;
+                end
                 t_start = obj.Bursts.T_start(bursts(1))-1;
                 t_end = obj.Bursts.T_end(bursts(end))+1;
                 for i = bursts(1):bursts(end)
-                    xline(obj.Bursts.T_start(i),'--g',{string(round(obj.Bursts.T_start(i)))},'LabelHorizontalAlignment','center');
+                    xline(obj.Bursts.T_start(i),'--b',{string(round(obj.Bursts.T_start(i)))},'LabelHorizontalAlignment','center');
                     hold on
                     xline(obj.Bursts.T_end(i),'--r',{string(round(obj.Bursts.T_end(i)))},'LabelHorizontalAlignment','center');
                 end
@@ -549,16 +561,16 @@ classdef WholeNetwork < handle
                 t_end = 180;
             end
             y = histc(obj.Active(1,:),t_start:binning:t_end);
-            y_smooth = y;smoothdata(y);
             x = t_start:binning:t_end;
-            G = zeros(1,length(x));
+            y(1) = 0;
+            y(end) = 0;
             colormap('gray')
-            p = patch([fliplr(x) x],[G y_smooth],[max(y_smooth)-y_smooth max(y_smooth)-y_smooth]);
-            
+            p = patch(x,y,y,'EdgeColor','interp','FaceColor','interp');
+            p.CData = abs(p.CData-max(p.CData));
             h=gca;
-            h.CLim = [max(y_smooth)/2 max(y_smooth)];
+            h.CLim = [max(y)/3 max(y)];
             ylabel('Coactivity');
-            xlabel('Time');
+            xlabel('Time [s]');
             axis tight
         end
         
@@ -593,7 +605,7 @@ classdef WholeNetwork < handle
             p = plot(spk(ind),obj.Active(2,ind),'k.','MarkerSize',0.0001);
             p.Color(4) = 0.1;
             ylabel('Units');
-            xlabel('Time (s)');
+            xlabel('Time [s]');
             axis tight
         end
 
@@ -604,7 +616,7 @@ classdef WholeNetwork < handle
             ax = subplot(3,2,2); colormap(ax,'gray'); obj.plotCoactivity(0.1);  title('Coactivity')
             ax = subplot(3,2,3); obj.plotNetworkActivity; colormap(ax,'parula'); title('Unit activity')
             subplot(3,2,4); obj.plotSpikePerUnit; title('Spikes per Unit')
-            subplot(3,2,[5,6]); obj.plotActivityRaster; title('Activity Raster')
+            subplot(3,2,[5,6]); obj.plotActivityRaster(0,180); title('Activity Raster')
         end
     end
 end

@@ -488,6 +488,28 @@ classdef Template < handle
             end
         end
         
+        function plotWf(obj)
+            wf_mat = obj.Waveform(obj.Electrodes,:)'*6.2;
+            min_wf = min(wf_mat);
+            max_wf = max(wf_mat);
+            peak_wfs = nan(1,size(wf_mat,2));
+            for i = 1:length(peak_wfs)
+                if abs(min_wf(i))>abs(max_wf(i))
+                    peak_wfs(i) = min_wf(i);
+                else
+                    peak_wfs(i) = max_wf(i);
+                end
+            end
+            c_idx = round(peak_wfs-min(peak_wfs))+1;
+            cmap = colormap('hot');
+            colors = cmap(round(linspace(1,200,max(c_idx))),:);
+            p = plot(wf_mat);
+            arrayfun(@(x) set(p(x),'Color',colors(c_idx(x),:)),1:length(c_idx))
+            axis tight
+            xlabel('Time [samples]')
+            ylabel('Amplitude (\muV)')
+        end
+        
         function prepareSave(obj)
            obj.SparseMatrix = [];
            obj.SpikeFrames = [];
