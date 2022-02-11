@@ -461,25 +461,23 @@ classdef WholeNetwork < handle
             arrayfun(@(x) x.inferFeatures,obj.Templates(obj.ActiveChannels));
         end
         
-        function saveNW(obj)
+        function saveNW(obj,save_path)
            nw = obj;
            nw.SpikeTimes = [];
            nw.Amplitudes = [];
            nw.TemplateMatrix = [];
            nw.Templates =  [];
-           nw.temp_x = [];
-           nw.temp_y = [];
            nw.Active = [];
            nw.ActiveChannels = [];
-           save('nw.mat','nw');
+           fname = 'nw.mat';
+           ffile = fullfile(save_path,fname);
+           save(ffile,'nw');
         end
         
         function saveTMP(obj,save_path)
             nw = obj;
             nw.SpikeTimes = [];
             nw.TemplateMatrix = [];
-            nw.temp_x = [];
-            nw.temp_y = [];
             nw.Active = [];
             arrayfun(@(x) x.prepareSave, nw.Templates)
             fname = 'tmp.mat';
