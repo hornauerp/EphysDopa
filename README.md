@@ -35,3 +35,6 @@ Different parts of the analysis are subdevided into different analysis scripts:
 
 ## Citation
 This package was published in "Electrophysiological classification of iPSC-derived dopaminergic neurons harbouring the SNCA-A53T mutation" and additionally contains code to replicate the figures used in the publication.
+
+## Disclaimer
+This package uses the `readNPY` function provided by the [npy-matlab package](https://github.com/kwikteam/npy-matlab), the `CCG` function provided by the [FMAToolbox](https://github.com/michael-zugaro/FMAToolbox), and the [`othercolor` function](https://ch.mathworks.com/matlabcentral/fileexchange/30564-othercolor).
