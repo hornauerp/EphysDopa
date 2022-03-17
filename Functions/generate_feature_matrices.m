@@ -15,7 +15,8 @@ for n = 1:n_groups
     if length(grouping_conditions)==1
         group_cell_array = {[grouping_conditions,vals]};
     else
-        group_cell_array = mat2cell(reshape([grouping_conditions,vals],length(grouping_conditions),[]),[1 1])';
+        grouping_mat = reshape([grouping_conditions,vals],length(grouping_conditions),[]);
+        group_cell_array = arrayfun(@(x) {grouping_mat(x,:)},1:size(grouping_mat,1));
     end
     group_array = filterObjectArray(nw_array,group_cell_array,{});
     leg(:,n) = vals;

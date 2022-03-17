@@ -1,13 +1,13 @@
 function [mat,vars,vars_idx,age,cl,batch] = generateInputMatrix(rec,MET,TH)
 nw_array = reshape([rec{:}],1,[]);
-nw_idx = [17:18,20:31];%11,12,
+nw_idx = [16:17,19:30];%11,12,
 nw_vars = properties(WholeNetwork);
 nw_prop = nw_vars(nw_idx);
 tmp_vars = properties(Template);
-tmp_idx = [4,11:15,17,19,21:27,41:48];
-wf_prop = [1:8,10:11];
-mc_prop = [9,16:20];
-act_prop = [12:15,21:23];
+tmp_idx = [4,11:26,45:47]; tmp_idx([7,9,11]) = [];
+wf_prop = [1:10];
+mc_prop = [];
+act_prop = [11:17];
 sc_prop = tmp_vars(tmp_idx);
 vars = [nw_prop' sc_prop'];
 nw_mat = zeros(numel(nw_array),length(nw_prop));

@@ -31,11 +31,11 @@ for v = 1:length(sel_vars)
     
     for i = 1:n_groups
         x = tps+1+jitter(i);
-        y = data_matrix(i,:,v);
+        y = data_matrix(i,1:length(x),v); %Quick fix, has to be corrected to show the selected time points
         xx = linspace(min(x),max(x),100); yy = pchip(x,y,xx);
         plot(xx,yy,'Color',c(i,:),'HandleVisibility','off')
         hold on
-        errorbar(tps+1+jitter(i),data_matrix(i,:,v),data_sd(i,:,v),...
+        errorbar(tps+1+jitter(i),data_matrix(i,1:length(x),v),data_sd(i,1:length(x),v),...
             'LineWidth',1,'Color',c(i,:),'CapSize',0,'LineStyle','none','Marker','o','MarkerSize',2,...
             'MarkerFaceColor',c(i,:));
         set(gca,'FontSize',fontsz)

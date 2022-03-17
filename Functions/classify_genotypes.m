@@ -1,4 +1,4 @@
-function [train_acc,test_acc,mutation] = classify_genotypes(nw_array,age_range,mat_idx,nw_sel,sc_sel,alg,kf,TH,N_hyper)
+function [train_acc,feature_names,test_acc,mutation] = classify_genotypes(nw_array,age_range,mat_idx,nw_sel,sc_sel,alg,kf,TH,N_hyper)
 arguments
    nw_array
    age_range (1,2) {isnumeric}

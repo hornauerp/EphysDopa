@@ -79,7 +79,7 @@ classdef Template < handle
         end
         
         function st = get.SpikeTimes(obj)
-           st = double(obj.SpikeFrames(1,:))/20000; 
+           st = double(obj.SpikeFrames(1,:))/obj.Network.SamplingRate; 
         end
         
         function wf = get.Waveform(obj)
@@ -187,7 +187,7 @@ classdef Template < handle
         
         function spt = getSpikes(obj,st)
             ind = st(2,:)==obj.ID;
-            spt = uint32(st(1,ind)*20000); %Spike times in sec
+            spt = uint32(st(1,ind)*obj.Network.SamplingRate); %Spike times in sec
             obj.Activity = length(spt);
         end
         

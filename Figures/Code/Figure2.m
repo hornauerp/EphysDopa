@@ -21,8 +21,10 @@ feature_group = "nw";
 % load('feat_imp_over_time.mat')
 if feature_group =="tmp"
 %     load('H:\Data\Prism\CDI\TemplateFeatures\tmp_data.mat')
-    load('H:\Data\AnalysisResults\Batch_12\tmp_matrix.mat');tmp_matrix(:,:,2) = []; tmp_sd(:,:,2) = [];
-    color_mat = load('H:\Data\AnalysisResults\Batch_12\sc_color_mat.mat','sc_color_mat');color_mat = color_mat.sc_color_mat;
+    load('H:\Data\AnalysisResults\Batch_12\tmp_matrix.mat');
+    tmp_matrix(:,:,2) = []; tmp_sd(:,:,2) = [];
+    color_mat = load('H:\Data\AnalysisResults\Batch_12\sc_color_mat.mat','sc_color_mat');
+    color_mat = color_mat.sc_color_mat;
     color_mat(2,:) = [];
     color_mat = color_mat(tmp_idx,:);
     sorted = tmp_sorted;

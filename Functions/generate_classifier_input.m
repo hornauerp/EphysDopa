@@ -8,9 +8,9 @@ PCA_IND = 0; %If raw feature values (0) or PCA values (1) should be used
 
 [nw_mat,nw_prop,mutation,batch,treatment] = generateNWMat(rec,PCA_IND,nw_sel);
 
-[~,wf_mat,~,act_mat,sc_prop,~,~,~,~,~] = generateSCMat(rec,MET,TH,PCA_IND,sc_sel);
+[sc_mat,wf_mat,~,act_mat,sc_prop,~,~,~,~,~] = generateSCMat(rec,MET,TH,PCA_IND,sc_sel);
 
-sc_mat = [wf_mat act_mat];
+% sc_mat = [wf_mat act_mat];
 mats = {nw_mat sc_mat};
 input_mat = [mats{mat_idx}]; input_mat(isnan(input_mat)) = 0;
 feature_names = {nw_prop; sc_prop}; 

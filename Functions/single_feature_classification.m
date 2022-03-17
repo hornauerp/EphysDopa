@@ -9,7 +9,7 @@ arguments
 end
 nw_sel = []; sc_sel = [];
 [input_mat,feature_names,mutation,batch,~] = generate_classifier_input(nw_array,age_range,mat_idx,nw_sel,sc_sel,TH);
-input_features = vertcat(feature_names{mat_idx});
+input_features = horzcat(feature_names{mat_idx});
 
 %% Single-feature classification
 cv_split = cvpartition(mutation,'KFold',kf);
