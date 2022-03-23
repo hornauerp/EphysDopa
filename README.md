@@ -14,7 +14,7 @@ Created with [BioRender](BioRender.com)
 - Evaluate the effect of treatments
 
 ## Requirements
-Currently *DeePhys* is only available on MATLAB, so a recent MATLAB installation (>2019b) is required. We plan on expanding MADEB to Python in the near future.
+Currently *DeePhys* is only available on MATLAB, so a recent MATLAB installation (>2019b) is required. We plan on expanding *DeePhys* to Python in the near future.
 
 If you want to use the [Notebooks](/Notebooks), you need to install [Jupyter lab or Jupyter notebook](https://jupyter.org/install) (`pip install jupyterlab` or `pip install notebook`) and the [MATLAB kernel](https://pypi.org/project/matlab-kernel/) (`pip install matlab_kernel`) + the [MATLAB API for Python](https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html). 
 
