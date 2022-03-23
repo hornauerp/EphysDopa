@@ -32,10 +32,10 @@ if N_groups ==4
 end
 % figure('color','w');
 ax = axes('NextPlot','add','FontSize',6.5);
-plot(ax,[0 max(xticks)*1.1],[0 length(labels)*7*1.2],'k--'); p.Color(4) = 0.3;
+
 arrayfun(@(i) boxchart(ax,groups(ismember(groups,i:N_groups:max(groups))),data(ismember(groups,i:N_groups:max(groups))),...
     'LineWidth',0.5,'MarkerSize',marker_size,'XData',positions(ismember(groups,i:N_groups:max(groups)))),1:N_groups)
-
+plot(ax,[0 max(xticks)*1.1],[0 length(labels)*7*1.2],'k--'); p.Color(4) = 0.3;
 set(gca,'XTick',xticks)
 set(gca,'XTickLabels',labels)
 set(gca,'YTick',X+1)
