@@ -1,11 +1,12 @@
-# Welcome to MADEB
-The package for the **(M)achine learning (A)ided (D)iscovery of (E)xtracellular (B)iomarkers**:
+# Welcome to *DeePhys*
+The package for **Deep electrophysiological phenotype characterization**:
 
-![Analysis pipeline schematic](Figures/EphysDopaSchematic_300dpi_nontransparent.png)
+<img src="https://github.com/hornauerp/EphysDopa/blob/2e43777e3fd1fe0e7467c4b3bf0aa25afb88b602/Figures/EphysDopaSchematic_v2202222.png" alt="Analysis schematic" style="width:500px;"/>
+
 Created with [BioRender](BioRender.com)
 
 ## Overview
-MADEB was created to facilitate the analysis of extracellular recordings of neuronal cultures using high-density microelectrode arrays (HD-MEAs). MADEB allows users to easily:
+*DeePhys* was created to facilitate the analysis of extracellular recordings of neuronal cultures using high-density microelectrode arrays (HD-MEAs). MADEB allows users to easily:
 - Extract electrophysiological features from spikesorted HD-MEA recordings
 - Visualize differential developmental trajectories 
 - Apply machine learning algorithms to classify different conditions
@@ -13,7 +14,7 @@ MADEB was created to facilitate the analysis of extracellular recordings of neur
 - Evaluate the effect of treatments
 
 ## Requirements
-Currently MADEB is only available on MATLAB, so a recent MATLAB installation (>2019b) is required. We plan on expanding MADEB to Python in the near future.
+Currently *DeePhys* is only available on MATLAB, so a recent MATLAB installation (>2019b) is required. We plan on expanding MADEB to Python in the near future.
 
 If you want to use the [Notebooks](/Notebooks), you need to install [Jupyter lab or Jupyter notebook](https://jupyter.org/install) (`pip install jupyterlab` or `pip install notebook`) and the [MATLAB kernel](https://pypi.org/project/matlab-kernel/) (`pip install matlab_kernel`) + the [MATLAB API for Python](https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html). 
 
