@@ -23,19 +23,19 @@ table_wfs_features.HalfWidth = hw;
 %% Wave form features (Ampl, Hw, asymmetry, trough-to-peak-ratio, trough-to-peak delay)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-table_wfs_features.assy = [];
-table_wfs_features.duration = [];
-table_wfs_features.t2pdelay = [];
-table_wfs_features.t2pratio = [];
-table_wfs_features.trough = [];
+table_wfs_features.assy = 0;
+table_wfs_features.duration = 0;
+table_wfs_features.t2pdelay = 0;
+table_wfs_features.t2pratio = 0;
+table_wfs_features.trough = 0;
 table_wfs_features.peak1 = [];
 table_wfs_features.peak2 = [];
-table_wfs_features.AUCpeak1 = [];
-table_wfs_features.WidthPeak1 = [];
-table_wfs_features.AUCpeak2 = [];
-table_wfs_features.WidthPeak2 = [];
-table_wfs_features.AUCtrough = [];
-table_wfs_features.WidthTrough = [];
+table_wfs_features.AUCpeak1 = 0;
+table_wfs_features.WidthPeak1 = 0;
+table_wfs_features.AUCpeak2 = 0;
+table_wfs_features.WidthPeak2 = 0;
+table_wfs_features.AUCtrough = 0;
+table_wfs_features.WidthTrough = 0;
 peak1_wo = [];
 peak2_wo = [];
 

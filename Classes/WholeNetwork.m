@@ -458,7 +458,11 @@ classdef WholeNetwork < handle
         end
         
         function getSingleCellFeatures(obj)
-            arrayfun(@(x) x.inferFeatures,obj.Templates(obj.ActiveChannels));
+            active = obj.Templates(obj.ActiveChannels);
+            for a = 1:length(active)
+               active(a).inferFeatures;
+            end
+%             arrayfun(@(x) x.inferFeatures,obj.Templates(obj.ActiveChannels));
         end
         
         function saveNW(obj,save_path)

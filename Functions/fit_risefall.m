@@ -26,7 +26,7 @@ try
 %             table.lm_rising = [];
 %     end
 catch
-    table.lm_rising= [];
+    table.lm_rising= 0;
 end
 
 %% Falling slope
@@ -46,7 +46,7 @@ try
     d = slewrate(ts(table_wfs_features.peak2(2):end));
     table.lm_decay = d(1);
 catch
-    table.lm_decay= [];
+    table.lm_decay= 0;
 end
 
 % Gather results
