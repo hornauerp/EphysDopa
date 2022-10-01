@@ -1,5 +1,6 @@
-addpath(genpath('/home/phornauer/Git/EphysDopa'))
-addpath(genpath('/home/phornauer/Git/drtoolbox'))
+addpath(genpath('/cluster/home/phornauer/Git/EphysDopa'))
+addpath(genpath('/cluster/home/phornauer/Git/drtoolbox'))
+addpath(genpath('/cluster/home/phornauer/Git/UMAP/'))
 %% 
 params.QC.amp = nan; %Amplitude thresholds to exclude units, either [min_amp max_amp] or nan for no amplitude filtering
 params.QC.rate = [0.1 10]; %Firing rate thresholds to exclude units, either [min_rate max_rate] or nan for no firing rate filtering
@@ -11,8 +12,10 @@ params.Regularity.binning = 0.1; %Binning for regularity calculations
 params.Bursts.binning = 0.1; %Binning for burst quantifications
 
 %%
-sorting_path = '/net/bs-filesvr02/export/group/hierlemann/intermediate_data/Mea1k/phornauer/si_test/sorted/';
-nw = WholeNetwork(sorting_path,params);
+sorting_path = '/cluster/project/bsse_sdsc/BELUB/Measurements/Cell_line_9/200217/5206/Sorting/traces/traces-merged.GUI';
+nw_wt = WholeNetwork(sorting_path,params);
+sorting_path = '/cluster/project/bsse_sdsc/BELUB/Measurements/Cell_line_10/200217/5215/Sorting/traces/traces-merged.GUI';
+nw_a53t = WholeNetwork(sorting_path,params);
 
 %% Select features to be included in the single-cell clustering
 sc_prop = ["ISIMean",...
@@ -24,32 +27,30 @@ sc_prop = ["ISIMean",...
     "ResonanceFit"
     ];
 
+norm_idx = 1; %Normalize wf to max amplitude
+rm_axon = 1; %Remove axonal signals (positive peak)
+
 %% Generate matrix of activity features
-feat_mat = zeros(length(sc_prop),length([nw.Templates.ID]));
-for f = 1:length(sc_prop)
-    feat_vals = [nw.Templates.(sc_prop(f))];
-    feat_vals(isnan(feat_vals)) = 0;
-    feat_mat(f,:) = feat_vals;
-end
-feat_mat = normalize(feat_mat');
+feat_wt = generate_sc_feature_matrix(nw_wt,sc_prop,norm_idx);
+feat_a53t = generate_sc_feature_matrix(nw_a53t,sc_prop,norm_idx);
 
-%% Generate matrix of peak waveforms
-wf_mat = vertcat(nw.Templates.MaxWf);
-wf_max = max(abs(wf_mat),[],2);
-norm_mat = wf_mat(:,20:end)./wf_max;
-
-%% Remove axonal signal with positive peak
-ax_idx = max(norm_mat,[],2)==1;
-norm_mat(ax_idx,:) = [];
-feat_mat(ax_idx,:) = [];
+%% Generate waveform matrix
+[wf_wt,ax_wt] = generate_wf_matrix(nw_wt,norm_idx,rm_axon);
+[wf_a53t,ax_a53t] = generate_wf_matrix(nw_a53t,norm_idx,rm_axon);
+feat_wt(ax_wt,:) = [];
+feat_a53t(ax_a53t,:) = [];
+mut_idx = [zeros(1,size(wf_wt,1)), ones(1,size(wf_a53t,1))];
+norm_mat = [wf_wt; wf_a53t];
+feat_mat = [feat_wt; feat_a53t];
 
 %% Estimate intrinsic dimensionality and reduce accordingly
 no_dims = intrinsic_dim(feat_mat);
-[mapped_feat, ~] = compute_mapping(feat_mat, 'tSNE', round(no_dims));
+[mapped_feat, ~] = compute_mapping(feat_mat, 'tSNE', floor(no_dims));
 
 %% Cluster activity features
 k = 4;
 idx = kmeans(mapped_feat,k);
+%%
 plot_cluster_scatter(mapped_feat,idx)
 
 %% Estimate intrinsic dimensionality and reduce accordingly
@@ -81,10 +82,30 @@ for nc = 2:10
 end
 
 %% Cluster combined features 
-k = 6;
+k = 2;
 idx = kmeans(mapped_comb,k);
 plot_cluster_scatter(mapped_comb,idx)
 
+%% Plot waveform clusters
+plot_waveform_clusters(norm_mat,idx)
+
+%% UMAP clustering
+rescaled_feat = normalize(feat_mat,'range',[-1 1]);
+full = [norm_mat rescaled_feat];
+[reduction, umap, clusterIdentifiers, extras]=run_umap(wf_wt,'n_components',2,'n_neighbors',20,'min_dist',0.001,'cluster_detail','adaptive','spread',1,...
+    'set_op_mix_ratio',0.5,'target_weight',0);
+
+%% UMAP plot
+plot_cluster_scatter(reduction,clusterIdentifiers)
+plot_waveform_clusters(norm_mat,clusterIdentifiers)
+
+%% Apply UMAP template to new data
+[reduction, umap, clusterIdentifiers, extras]=run_umap(wf_a53t,'template_file','umap.mat','n_components',2,'n_neighbors',20,'min_dist',0.001,'cluster_detail','adaptive','spread',1,...
+    'set_op_mix_ratio',0.5,'target_weight',0);
+
+%% UMAP plot
+plot_cluster_scatter(reduction,clusterIdentifiers)
+plot_waveform_clusters(norm_mat,clusterIdentifiers)
 %%
 function plot_waveform_clusters(norm_mat,idx)
 figure;
@@ -94,6 +115,11 @@ for i = 1:max(idx)
     plot(norm_mat(idx==i,:)','Color',[0.8 0.8 0.8 0.5],'LineWidth',0.01)
     hold on
     plot(mean(norm_mat(idx==i,:)),'k')
+end
+nexttile
+for i = 1:max(idx)
+   plot(mean(norm_mat(idx==i,:)))
+   hold on
 end
 end
 %%

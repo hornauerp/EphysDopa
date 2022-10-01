@@ -79,10 +79,10 @@ classdef WholeNetwork < handle
                 if ~isempty([nw.ActiveChannels])
                     nw.getActive;
                     nw.getBaselineFrequency;
-                    nw.getRegularity;
-                    nw.getBurstTimes;
-                    nw.getBurstStatistics;
-                    nw.getSynchronicity;
+%                     nw.getRegularity;
+%                     nw.getBurstTimes;
+%                     nw.getBurstStatistics;
+%                     nw.getSynchronicity;
                     nw.getSingleCellFeatures;
                 end
             end
