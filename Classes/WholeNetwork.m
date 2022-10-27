@@ -8,10 +8,10 @@ classdef WholeNetwork < handle
         InputPath
         Params
         Duration
-        Templates
+        Units
         XYElectrodes
         ActiveChannels
-        Active  %(1,:) = spike times (2,:) channels of Active templates (3,:) within burst (1)
+        Active  %(1,:) = spike times (2,:) channels of Active Units (3,:) within burst (1)
         SpikeTimes
         SamplingRate
         TemplateMatrix
@@ -69,7 +69,7 @@ classdef WholeNetwork < handle
                 [nw.SpikeTimes, nw.SamplingRate] = nw.getSpikeTimes();
                 nw.TemplateMatrix = nw.getTemplateMatrix();
                 nw.Duration = double(max(nw.SpikeTimes(1,:))); %seconds
-                nw.Templates = nw.generateTemplates();
+                nw.Units = nw.generateUnits();
                 if isempty([nw.ActiveChannels])
                     return
                 end
@@ -92,7 +92,7 @@ classdef WholeNetwork < handle
             if subsampling < length([obj.ActiveChannels])
                 min_nsize = 16;
                 if method == "Act"
-                    tmp_act = [obj.Templates(obj.ActiveChannels).Activity];
+                    tmp_act = [obj.Units(obj.ActiveChannels).Activity];
                     [~,ind] = sort(tmp_act,'descend');
                     if subsampling > 1
                         ind = ind(1:subsampling);
@@ -122,13 +122,13 @@ classdef WholeNetwork < handle
             end
         end
         
-        function tmp = generateTemplates(obj)
+        function tmp = generateUnits(obj)
             a = [];
             for i = 1:size(obj.TemplateMatrix,1)
                 if obj.passCriteria(i)
                     w = permute(obj.TemplateMatrix(i,:,:),[3 2 1]);
                     w = sparse(double(w));
-                    tmp(i) = Template(obj,i,obj.SpikeTimes,w);
+                    tmp(i) = Unit(obj,i,obj.SpikeTimes,w);
                     a = [a i];
                 end
             end
@@ -200,7 +200,7 @@ classdef WholeNetwork < handle
             if nargin == 1
                 p = 0;
             end
-            tmp = obj.Templates(obj.ActiveChannels);
+            tmp = obj.Units(obj.ActiveChannels);
             isi = arrayfun(@(x) diff(x.SpikeTimes),tmp,'UniformOutput',false);
             if ~isempty(isi)
                 hc = histcounts([isi{:}],round(max([isi{:}])));
@@ -384,7 +384,7 @@ classdef WholeNetwork < handle
             end
             obj.Active(3,:) = BurstInd;
             for i = obj.ActiveChannels
-                t = obj.Templates(i);
+                t = obj.Units(i);
                 t.getInburstRatio(BurstInd(obj.Active(2,:)==i));
             end
         end
@@ -449,8 +449,8 @@ classdef WholeNetwork < handle
                 [ccg,~] = CCG(spk,ch,'duration',1,'binSize',0.01);
                 ccg_max = max(ccg,[],1);
                 cc = permute(ccg_max,[3 2 1]);
-                arrayfun(@(x) x.normCon(cc,obj),obj.Templates([obj.ActiveChannels]),'UniformOutput',false);
-                nc = vertcat(obj.Templates.ConVector);
+                arrayfun(@(x) x.normCon(cc,obj),obj.Units([obj.ActiveChannels]),'UniformOutput',false);
+                nc = vertcat(obj.Units.ConVector);
                 obj.Synchronicity = mean(nc,'all');
             else
                 obj.Synchronicity = NaN;
@@ -458,11 +458,11 @@ classdef WholeNetwork < handle
         end
         
         function getSingleCellFeatures(obj)
-            active = obj.Templates(obj.ActiveChannels);
+            active = obj.Units(obj.ActiveChannels);
             for a = 1:length(active)
                active(a).inferFeatures;
             end
-%             arrayfun(@(x) x.inferFeatures,obj.Templates(obj.ActiveChannels));
+%             arrayfun(@(x) x.inferFeatures,obj.Units(obj.ActiveChannels));
         end
         
         function saveNW(obj,save_path)
@@ -470,7 +470,7 @@ classdef WholeNetwork < handle
            nw.SpikeTimes = [];
            nw.Amplitudes = [];
            nw.TemplateMatrix = [];
-           nw.Templates =  [];
+           nw.Units =  [];
            nw.Active = [];
            nw.ActiveChannels = [];
            fname = 'nw.mat';
@@ -483,7 +483,7 @@ classdef WholeNetwork < handle
             nw.SpikeTimes = [];
             nw.TemplateMatrix = [];
             nw.Active = [];
-            arrayfun(@(x) x.prepareSave, nw.Templates)
+            arrayfun(@(x) x.prepareSave, nw.Units)
             fname = 'tmp.mat';
             ffile = fullfile(save_path,fname);
             save(ffile,'nw');
@@ -504,7 +504,7 @@ classdef WholeNetwork < handle
             Z=[];
             for i = 1:numel(ids)
                Z(i) = sum(ids(i)==ch); %Fix
-               el_id = obj.Templates(ids(i)).Electrodes;
+               el_id = obj.Units(ids(i)).Electrodes;
                X = obj.XYElectrodes(el_id,1);
                Y = obj.XYElectrodes(el_id,2);
                X = mean(X);
@@ -514,7 +514,7 @@ classdef WholeNetwork < handle
             end
             if nargin==4
             for i = 1:numel(tmp_ID)
-                ref_el = obj.Templates(tmp_ID(i)).RefElectrode;
+                ref_el = obj.Units(tmp_ID(i)).RefElectrode;
                 X_tmp = obj.XYElectrodes(ref_el,1);
                 Y_tmp = obj.XYElectrodes(ref_el,2);
                 x_tmp(i) = X_tmp;
@@ -525,7 +525,7 @@ classdef WholeNetwork < handle
                 y_tmp = [];
             end
             Z = Z/length;
-            num_el = {obj.Templates.Electrodes};
+            num_el = {obj.Units.Electrodes};
             num_el = cellfun('length',num_el(ids));
             sz = 4*num_el;
             f = scatter(x,y,sz,Z,'filled');
@@ -588,7 +588,7 @@ classdef WholeNetwork < handle
         end
         
         function plotWaveforms(obj)
-            wfs = vertcat(obj.Templates([obj.ActiveChannels]).MaxWf)*6.2;
+            wfs = vertcat(obj.Units([obj.ActiveChannels]).MaxWf)*6.2;
             plot(wfs')
             set(gca, 'Box', 'off','TickDir', 'out','TickLength', [.01 .01] ,'XMinorTick','off','YMinorTick', 'off','LineWidth', 1);
             axis tight

@@ -23,8 +23,8 @@ for n = 1:n_groups
     for t = 1:tp
        tp_array = findobj(group_array,'DIV',tps(t));
        for v = 1:length(tmp_vars)
-           tmp_matrix(n,t,v) = mean(rmoutliers(arrayfun(@(x) mean([x.Templates.(tmp_vars{v})],'omitnan'),tp_array),'ThresholdFactor',th),'omitnan');
-           tmp_sd(n,t,v) = std(rmoutliers(arrayfun(@(x) mean([x.Templates.(tmp_vars{v})],'omitnan'),tp_array),'ThresholdFactor',th),'omitnan');
+           tmp_matrix(n,t,v) = mean(rmoutliers(arrayfun(@(x) mean([x.Units.(tmp_vars{v})],'omitnan'),tp_array),'ThresholdFactor',th),'omitnan');
+           tmp_sd(n,t,v) = std(rmoutliers(arrayfun(@(x) mean([x.Units.(tmp_vars{v})],'omitnan'),tp_array),'ThresholdFactor',th),'omitnan');
        end
        for v = 1:length(nw_vars)
            nw_matrix(n,t,v) = mean(rmoutliers([tp_array.(nw_vars{v})],'ThresholdFactor',th),'omitnan');

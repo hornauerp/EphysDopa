@@ -20,7 +20,7 @@ else
     end
 end
 
-f = figure('Name','Template Features','Color','w','Position',[100 100 1500 1000]);
+f = figure('Name','Single-cell Features','Color','w','Position',[100 100 1500 1000]);
 tiledlayout('flow','TileSpacing','tight')
 % c([1 3 2 6 4 5],:) = c;
 

@@ -20,7 +20,7 @@ tps = intersect(unique([dataset_1.DIV]),unique([dataset_2.DIV]));
 n_tp = length(tps);
 
 %% Select relevant features
-sc_vars = properties(Template);
+sc_vars = properties(Unit);
 sc_vars =  sc_vars(sc_idx);
 nw_vars = properties(WholeNetwork);
 nw_vars = nw_vars(nw_idx);
@@ -55,7 +55,7 @@ for var_idx = 1:length(sc_vars)
         for i = 1:length(dataset_1_ids)
             id_group = findobj(time_group,'ChipID',dataset_1_ids{i});
             if ~isempty(id_group)
-                dataset_1_mat(t,i) = rmoutliers(arrayfun(@(x) mean([x.Templates.(var)],'omitnan'),id_group),'ThresholdFactor',th);
+                dataset_1_mat(t,i) = rmoutliers(arrayfun(@(x) mean([x.Units.(var)],'omitnan'),id_group),'ThresholdFactor',th);
             end
         end
         dataset_1_mat(t,isoutlier(dataset_1_mat(t,:),'median','ThresholdFactor',3)) = NaN;
@@ -80,7 +80,7 @@ for var_idx = 1:length(sc_vars)
         for i = 1:length(dataset_2_ids)
             id_group = findobj(time_group,'ChipID',dataset_2_ids{i});
             if ~isempty(id_group)
-                dataset_2_mat(t,i) = rmoutliers(arrayfun(@(x) mean([x.Templates.(var)],'omitnan'),id_group),'ThresholdFactor',th);
+                dataset_2_mat(t,i) = rmoutliers(arrayfun(@(x) mean([x.Units.(var)],'omitnan'),id_group),'ThresholdFactor',th);
             end
         end
         dataset_2_mat(t,isoutlier(dataset_2_mat(t,:),'median','ThresholdFactor',3)) = NaN;

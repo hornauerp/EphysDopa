@@ -1,4 +1,4 @@
-classdef Template < handle
+classdef Unit < handle
 
     properties(Hidden)
        SparseMatrix
@@ -65,7 +65,7 @@ classdef Template < handle
 
     
     methods
-        function tmp = Template(network,id,st,w)
+        function tmp = Unit(network,id,st,w)
             
             if nargin > 0
                 tmp.Network = network;
@@ -127,7 +127,7 @@ classdef Template < handle
             Y_active = Y_all(obj.Electrodes);
             X_ref = X_all(obj.RefElectrode);
             Y_ref = Y_all(obj.RefElectrode);
-            name = sprintf('Active Electrodes Template %d',obj.ID);
+            name = sprintf('Active Electrodes Unit %d',obj.ID);
 %             figure('Name',name,'Position',[10 10 880 480]);
             plot(X_all,Y_all,'b.');
             hold on

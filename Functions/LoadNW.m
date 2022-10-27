@@ -13,7 +13,7 @@ for i = 1:length(cls)
 end
 
 nw = [C(:).nw_array];
-ind = arrayfun(@(x) isempty(x.Templates),nw);
+ind = arrayfun(@(x) isempty(x.Units),nw);
 nw(ind) = [];
 %Transform Fano to CV
 for n = 1:length(nw)

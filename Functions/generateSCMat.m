@@ -26,7 +26,7 @@ sc_prop = ["Amplitude",...
     "ResonanceFit"
     ];
 
-% tmp_vars = properties(Template);
+% tmp_vars = properties(Unit);
 % tmp_idx = [4,11:15,17,19,22:27,46:48];
 % sc_prop = tmp_vars(tmp_idx);
 if ~isempty(var_sel)
@@ -51,14 +51,14 @@ for i = 1:length(rec)
     crec = rec{i};
     vec = [];
     for j = 1:numel(sc_prop)
-        v = arrayfun(@(x) mean(rmoutliers([x.Templates.(sc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec);
+        v = arrayfun(@(x) mean(rmoutliers([x.Units.(sc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec);
         vec = [vec v];
     end
     sc_mat(i,:) = vec;
     vec = [];
     if ~isempty(wf_prop)
     for j = 1:numel(wf_prop)
-        v = arrayfun(@(x) mean(rmoutliers([x.Templates.(wf_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec);
+        v = arrayfun(@(x) mean(rmoutliers([x.Units.(wf_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec);
         vec = [vec v];
     end
     wf_mat(i,:) = vec;
@@ -67,7 +67,7 @@ for i = 1:length(rec)
     vec = [];
     if ~isempty(mc_prop)
     for j = 1:numel(mc_prop)
-        v = arrayfun(@(x) mean(rmoutliers([x.Templates.(mc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec);
+        v = arrayfun(@(x) mean(rmoutliers([x.Units.(mc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec);
         vec = [vec v];
     end
     mc_mat(i,:)= vec;
@@ -75,7 +75,7 @@ for i = 1:length(rec)
     vec = [];
     if ~isempty(act_prop)
     for j = 1:numel(act_prop)
-        v = arrayfun(@(x) mean(rmoutliers([x.Templates.(act_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec);
+        v = arrayfun(@(x) mean(rmoutliers([x.Units.(act_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec);
         vec = [vec v];
     end
     act_mat(i,:)= vec;
@@ -87,7 +87,7 @@ else
         vec = zeros(length(rec),length(rec{1}));
         for i = 1:length(rec)
             crec = rec{i};
-            v = arrayfun(@(x) mean(rmoutliers([x.Templates.(sc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec)';
+            v = arrayfun(@(x) mean(rmoutliers([x.Units.(sc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec)';
             vec(i,:) = v;
         end
         [~,score,~,~,explained] = pca(vec);
@@ -98,7 +98,7 @@ else
         vec = zeros(length(rec),length(rec{1}));
         for i = 1:length(rec)
             crec = rec{i};
-            v = arrayfun(@(x) mean(rmoutliers([x.Templates.(wf_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec)';
+            v = arrayfun(@(x) mean(rmoutliers([x.Units.(wf_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec)';
             vec(i,:) = v;
         end
         [~,score,~,~,explained] = pca(vec);
@@ -109,7 +109,7 @@ else
         vec = zeros(length(rec),length(rec{1}));
         for i = 1:length(rec)
             crec = rec{i};
-            v = arrayfun(@(x) mean(rmoutliers([x.Templates.(mc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec)';
+            v = arrayfun(@(x) mean(rmoutliers([x.Units.(mc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec)';
             vec(i,:) = v;
         end
         [~,score,~,~,explained] = pca(vec);
@@ -120,7 +120,7 @@ else
         vec = zeros(length(rec),length(rec{1}));
         for i = 1:length(rec)
             crec = rec{i};
-            v = arrayfun(@(x) mean(rmoutliers([x.Templates.(act_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec)';
+            v = arrayfun(@(x) mean(rmoutliers([x.Units.(act_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),crec)';
             vec(i,:) = v;
         end
         [~,score,~,~,explained] = pca(vec);

@@ -1,21 +1,19 @@
 addpath(genpath('/cluster/home/phornauer/Git/EphysDopa'))
 addpath(genpath('/cluster/home/phornauer/Git/drtoolbox'))
-addpath(genpath('/cluster/home/phornauer/Git/UMAP/'))
-%% 
-params.QC.amp = nan; %Amplitude thresholds to exclude units, either [min_amp max_amp] or nan for no amplitude filtering
-params.QC.rate = [0.1 10]; %Firing rate thresholds to exclude units, either [min_rate max_rate] or nan for no firing rate filtering
-params.QC.rv = 0.02; %Maximum refractory period violations in [%], default is 0.02
-params.Bursts.N = 0.0015; %Parameters for burst detection, for details see Bakkum et al., 2014 (https://doi.org/10.3389/fncom.2013.00193)
-params.Bursts.ISI_N = 1.5;
-params.Bursts.merge_t = 2;
-params.Regularity.binning = 0.1; %Binning for regularity calculations
-params.Bursts.binning = 0.1; %Binning for burst quantifications
 
-%%
-sorting_path = '/cluster/project/bsse_sdsc/BELUB/Measurements/Cell_line_9/200217/5206/Sorting/traces/traces-merged.GUI';
-nw_wt = WholeNetwork(sorting_path,params);
-sorting_path = '/cluster/project/bsse_sdsc/BELUB/Measurements/Cell_line_10/200217/5215/Sorting/traces/traces-merged.GUI';
-nw_a53t = WholeNetwork(sorting_path,params);
+%% Load full dataset
+load('F:\Promotion\Git\EphysDopa\Data\full_dataset.mat')
+
+%% Select data
+batches = unique([nw_array.PlatingDate]); %Refer to different batches via their PlatingDate property
+inclusion = {{'PlatingDate',batches([3])},{'DIV',6,13,20,27,34}}; %e.g. specify the batches to analyze by indexing the batches array // here we use the first two
+exclusion = {};
+sel_nw = filterObjectArray(nw_array,inclusion,exclusion);
+Unit_array = arrayfun(@(x) sel_nw(x).Units(sel_nw(x).ActiveChannels),1:length(sel_nw),'UniformOutput',false);
+Unit_array = [Unit_array{:}];
+mut_idx = double(arrayfun(@(x) contains(Unit_array(x).Network.Mutation,'a53t'),1:length(Unit_array)));
+age_idx = arrayfun(@(x) Unit_array(x).Network.DIV,1:length(Unit_array));
+treat_idx = double(arrayfun(@(x) contains(Unit_array(x).Network.Treatment,'LNA7'),1:length(Unit_array)));
 
 %% Select features to be included in the single-cell clustering
 sc_prop = ["ISIMean",...
@@ -31,17 +29,26 @@ norm_idx = 1; %Normalize wf to max amplitude
 rm_axon = 1; %Remove axonal signals (positive peak)
 
 %% Generate matrix of activity features
-feat_wt = generate_sc_feature_matrix(nw_wt,sc_prop,norm_idx);
-feat_a53t = generate_sc_feature_matrix(nw_a53t,sc_prop,norm_idx);
+% feat_wt = generate_sc_feature_matrix(sel_nw,sc_prop,norm_idx);
+% feat_a53t = generate_sc_feature_matrix(nw_a53t,sc_prop,norm_idx);
 
-%% Generate waveform matrix
-[wf_wt,ax_wt] = generate_wf_matrix(nw_wt,norm_idx,rm_axon);
-[wf_a53t,ax_a53t] = generate_wf_matrix(nw_a53t,norm_idx,rm_axon);
-feat_wt(ax_wt,:) = [];
-feat_a53t(ax_a53t,:) = [];
-mut_idx = [zeros(1,size(wf_wt,1)), ones(1,size(wf_a53t,1))];
-norm_mat = [wf_wt; wf_a53t];
-feat_mat = [feat_wt; feat_a53t];
+%% Full matrices
+[wf_full,ax_full] = generate_wf_matrix(Unit_array,norm_idx,rm_axon);
+feat_full = generate_sc_feature_matrix(Unit_array,sc_prop,norm_idx);
+feat_full(ax_full,:) = [];
+feat_mat = feat_full;
+norm_mat = wf_full;
+mut_idx(ax_full) = [];
+age_idx(ax_full) = [];
+treat_idx(ax_full) = [];
+% %% Generate waveform matrix
+% [wf_wt,ax_wt] = generate_wf_matrix(nw_wt,norm_idx,rm_axon);
+% [wf_a53t,ax_a53t] = generate_wf_matrix(nw_a53t,norm_idx,rm_axon);
+% feat_wt(ax_wt,:) = [];
+% feat_a53t(ax_a53t,:) = [];
+% mut_idx = [zeros(1,size(wf_wt,1)), ones(1,size(wf_a53t,1))];
+% norm_mat = [wf_wt; wf_a53t];
+% feat_mat = [feat_wt; feat_a53t];
 
 %% Estimate intrinsic dimensionality and reduce accordingly
 no_dims = intrinsic_dim(feat_mat);
@@ -92,42 +99,33 @@ plot_waveform_clusters(norm_mat,idx)
 %% UMAP clustering
 rescaled_feat = normalize(feat_mat,'range',[-1 1]);
 full = [norm_mat rescaled_feat];
-[reduction, umap, clusterIdentifiers, extras]=run_umap(wf_wt,'n_components',2,'n_neighbors',20,'min_dist',0.001,'cluster_detail','adaptive','spread',1,...
+[reduction, umap, clusterIdentifiers, extras]=run_umap(full,'n_components',2,'n_neighbors',100,'min_dist',0.1,'cluster_detail','adaptive','spread',1,'sgd_tasks',20);
+
+%% UMAP plot
+% idx = spectralcluster(reduction,2);
+plot_cluster_scatter(reduction,clusterIdentifiers)
+% colormap(othercolor('RdYlBu9',100))
+colorbar
+plot_waveform_clusters(norm_mat,clusterIdentifiers)
+
+%% Compare mutations
+figure('Color','w');
+subplot(1,2,1)
+wt_data = [reduction(mut_idx==0,1),reduction(mut_idx==0,2)];
+values_wt = hist3(wt_data,[101 101]);
+i1 = imagesc(values_wt.'./max(max(values_wt)));
+cb = colorbar('LimitsMode','manual');
+% scatter(reduction(mut_idx==0,1),reduction(mut_idx==0,2),1,'b','filled')
+subplot(1,2,2)
+a53t_data = [reduction(mut_idx==1,1),reduction(mut_idx==1,2)];
+values = hist3(a53t_data,[101 101]);
+i2 = imagesc(values.'./max(max(values_wt)));
+colorbar
+% scatter(reduction(mut_idx==1,1),reduction(mut_idx==1,2),1,'r','filled')
+%% Apply UMAP Unit to new data
+[reduction, umap, clusterIdentifiers, extras]=run_umap(wf_a53t,'Unit_file','umap.mat','n_components',2,'n_neighbors',20,'min_dist',0.001,'cluster_detail','adaptive','spread',1,...
     'set_op_mix_ratio',0.5,'target_weight',0);
 
 %% UMAP plot
 plot_cluster_scatter(reduction,clusterIdentifiers)
 plot_waveform_clusters(norm_mat,clusterIdentifiers)
-
-%% Apply UMAP template to new data
-[reduction, umap, clusterIdentifiers, extras]=run_umap(wf_a53t,'template_file','umap.mat','n_components',2,'n_neighbors',20,'min_dist',0.001,'cluster_detail','adaptive','spread',1,...
-    'set_op_mix_ratio',0.5,'target_weight',0);
-
-%% UMAP plot
-plot_cluster_scatter(reduction,clusterIdentifiers)
-plot_waveform_clusters(norm_mat,clusterIdentifiers)
-%%
-function plot_waveform_clusters(norm_mat,idx)
-figure;
-tiledlayout('flow')
-for i = 1:max(idx)
-    nexttile
-    plot(norm_mat(idx==i,:)','Color',[0.8 0.8 0.8 0.5],'LineWidth',0.01)
-    hold on
-    plot(mean(norm_mat(idx==i,:)),'k')
-end
-nexttile
-for i = 1:max(idx)
-   plot(mean(norm_mat(idx==i,:)))
-   hold on
-end
-end
-%%
-function plot_cluster_scatter(mapped_data,idx)
-figure;
-if size(mapped_data,2) == 2
-    scatter(mapped_data(:,1),mapped_data(:,2),10,idx,'filled')
-else
-    scatter3(mapped_data(:,1),mapped_data(:,2),mapped_data(:,3),10,idx,'filled')
-end
-end

@@ -3,7 +3,7 @@ nw_array = reshape([rec{:}],1,[]);
 nw_idx = [16:17,19:30];%11,12,
 nw_vars = properties(WholeNetwork);
 nw_prop = nw_vars(nw_idx);
-tmp_vars = properties(Template);
+tmp_vars = properties(Unit);
 tmp_idx = [4,11:26,45:47]; tmp_idx([7,9,11]) = [];
 wf_prop = [1:10];
 mc_prop = [];
@@ -16,7 +16,7 @@ for p = 1:length(nw_prop)
     nw_mat(:,p) = [nw_array.(nw_prop{p})];
 end
 for j = 1:numel(sc_prop)
-    sc_mat(:,j) = arrayfun(@(x) mean(rmoutliers([x.Templates.(sc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),nw_array)';
+    sc_mat(:,j) = arrayfun(@(x) mean(rmoutliers([x.Units.(sc_prop{j})],MET,'ThresholdFactor',TH),'omitnan'),nw_array)';
 end
 batches = unique([nw_array.PlatingDate]);
 batch = arrayfun(@(x) find(x.PlatingDate==batches),nw_array);
