@@ -7,3 +7,4 @@ everything !text !filter !merge !diff
 Data/full_dataset.mat filter=lfs diff=lfs merge=lfs -text
 Data/full_dataset_v2.mat filter=lfs diff=lfs merge=lfs -text
 *.npy filter=lfs diff=lfs merge=lfs -text
+Data/Sorting_example/templates.npy filter=lfs diff=lfs merge=lfs -text
