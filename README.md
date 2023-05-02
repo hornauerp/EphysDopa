@@ -1,8 +1,10 @@
-# Welcome to *DeePhys*
-
-## We rewrote the analysis pipeline, which can now be found as the proper [DeePhys package](https://github.com/hornauerp/DeePhys)##
+## We rewrote the analysis pipeline, which can now be found as the proper [DeePhys package](https://github.com/hornauerp/DeePhys)
 ** This repository is no longer maintained and we encourage you to use the [DeePhys repo](https://github.com/hornauerp/DeePhys) instead **
 
+
+
+
+# Welcome to *DeePhys*
 The package for **Deep electrophysiological phenotype characterization**:
 
 <img src="https://github.com/hornauerp/EphysDopa/blob/2e43777e3fd1fe0e7467c4b3bf0aa25afb88b602/Figures/EphysDopaSchematic_v2202222.png" alt="Analysis schematic" style="width:500px;"/>
